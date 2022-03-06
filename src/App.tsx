@@ -4,29 +4,31 @@ import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
 import "./styles.css";
 
 const ffmpeg = createFFmpeg({
-  log: true
-  // corePath: "https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js"
+  log: true,
 });
 
 export default function App() {
   const [message, setMessage] = useState("Drop a GIF file.");
   const [videoSrc, setVideoSrc] = useState("");
 
-  const doGifToMp4 = async (fileName: string) => {
-    setMessage("Loading ffmpeg-core.js");
+  const doGifToMp4 = async (file: File) => {
+    setMessage("Preparing");
 
-    await ffmpeg.load();
+    if (!ffmpeg.isLoaded()) {
+      await ffmpeg.load();
+    }
 
-    setMessage("Start transcoding");
+    setMessage("Start");
 
-    const inputFileName = `${fileName}.gif`;
-    const outputFileName = `${fileName}.mp4`;
+    const inputFileName = file.name;
+    const outputFileName = `${file.name.replace(/\.gif$/, "")}.mp4`;
 
-    ffmpeg.FS("writeFile", inputFileName, await fetchFile(inputFileName));
+    ffmpeg.FS("writeFile", inputFileName, await fetchFile(file));
 
-    await ffmpeg.run("-i", inputFileName, "-c:v", "libx264", outputFileName);
+    setMessage("Processing");
+    await ffmpeg.run("-i", inputFileName, outputFileName);
 
-    setMessage("Complete transcoding");
+    setMessage("Complete");
 
     const data = ffmpeg.FS("readFile", outputFileName);
     ffmpeg.FS("unlink", inputFileName);
@@ -51,7 +53,7 @@ export default function App() {
       return;
     }
 
-    doGifToMp4(firstFile.name);
+    doGifToMp4(firstFile);
   };
 
   return (
